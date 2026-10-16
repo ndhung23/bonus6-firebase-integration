@@ -3,13 +3,17 @@ import {
   StyleSheet,
   Text,
   View,
-  TextInput,
   Pressable,
   ScrollView,
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import {
+  COLORS,
+  ModernInput,
+  PrimaryButton,
+  FeedbackAlert,
+} from './UiPrimitives';
 
 export default function AuthScreen({ onLogin, onRegister }) {
   const [isRegisterMode, setIsRegisterMode] = useState(false);
@@ -55,154 +59,155 @@ export default function AuthScreen({ onLogin, onRegister }) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled">
-        <View style={styles.card}>
-          <Text style={styles.title}>Firebase Auth & FCM</Text>
-          <Text style={styles.subtitle}>
-            Đăng nhập, quản lý thông tin cá nhân (Email, SĐT, Mật khẩu, Địa chỉ) & nhận Push Notification qua Firebase Cloud Messaging
-          </Text>
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}>
+        <View style={styles.authContainer}>
+          {/* Hero Dark Banner */}
+          <View style={styles.heroBanner}>
+            <View style={styles.heroGlowCircle1} />
+            <View style={styles.heroGlowCircle2} />
 
-          {/* Chuyển đổi Đăng nhập / Đăng ký */}
-          <View style={styles.tabSwitch}>
-            <Pressable
-              style={[
-                styles.tabOption,
-                !isRegisterMode && styles.tabOptionActive,
-              ]}
-              onPress={() => {
-                setIsRegisterMode(false);
-                setFeedback(null);
-              }}>
-              <Text
-                style={[
-                  styles.tabOptionText,
-                  !isRegisterMode && styles.tabOptionTextActive,
-                ]}>
-                Đăng nhập
-              </Text>
-            </Pressable>
-            <Pressable
-              style={[
-                styles.tabOption,
-                isRegisterMode && styles.tabOptionActive,
-              ]}
-              onPress={() => {
-                setIsRegisterMode(true);
-                setFeedback(null);
-              }}>
-              <Text
-                style={[
-                  styles.tabOptionText,
-                  isRegisterMode && styles.tabOptionTextActive,
-                ]}>
-                Đăng ký mới
-              </Text>
-            </Pressable>
+            <View style={styles.heroBadgeRow}>
+              <View style={styles.brandMark}>
+                <View style={styles.brandFlameInner} />
+              </View>
+              <View style={styles.liveTag}>
+                <View style={styles.liveDot} />
+                <Text style={styles.liveTagText}>
+                  FIREBASE AUTH • FIRESTORE • FCM
+                </Text>
+              </View>
+            </View>
+
+            <Text style={styles.heroTitle}>
+              {isRegisterMode
+                ? 'Khởi tạo hồ sơ người dùng'
+                : 'Đăng nhập hệ thống'}
+            </Text>
+            <Text style={styles.heroSubtitle}>
+              Quản lý đồng bộ thông tin tài khoản (Email, Số điện thoại, Mật khẩu, Địa chỉ) & dịch vụ thông báo đẩy thời gian thực.
+            </Text>
           </View>
 
-          {feedback && (
-            <View
-              style={[
-                styles.feedbackBox,
-                feedback.type === 'error'
-                  ? styles.feedbackError
-                  : styles.feedbackInfo,
-              ]}>
-              <Text
+          {/* Form Body */}
+          <View style={styles.formBody}>
+            {/* Segmented Control */}
+            <View style={styles.segmentedControl}>
+              <Pressable
                 style={[
-                  styles.feedbackText,
-                  feedback.type === 'error'
-                    ? styles.feedbackErrorText
-                    : styles.feedbackInfoText,
-                ]}>
-                {feedback.text}
-              </Text>
-            </View>
-          )}
+                  styles.segmentItem,
+                  !isRegisterMode && styles.segmentItemActive,
+                ]}
+                onPress={() => {
+                  setIsRegisterMode(false);
+                  setFeedback(null);
+                }}>
+                <Text
+                  style={[
+                    styles.segmentText,
+                    !isRegisterMode && styles.segmentTextActive,
+                  ]}>
+                  Đăng nhập
+                </Text>
+              </Pressable>
 
-          {/* Các trường nhập liệu */}
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Email (*)</Text>
-            <TextInput
-              style={styles.input}
+              <Pressable
+                style={[
+                  styles.segmentItem,
+                  isRegisterMode && styles.segmentItemActive,
+                ]}
+                onPress={() => {
+                  setIsRegisterMode(true);
+                  setFeedback(null);
+                }}>
+                <Text
+                  style={[
+                    styles.segmentText,
+                    isRegisterMode && styles.segmentTextActive,
+                  ]}>
+                  Đăng ký tài khoản
+                </Text>
+              </Pressable>
+            </View>
+
+            {feedback ? (
+              <FeedbackAlert
+                type={feedback.type}
+                message={feedback.text}
+                onDismiss={() => setFeedback(null)}
+              />
+            ) : null}
+
+            <ModernInput
+              label="Địa chỉ Email"
+              badgeText="Bắt buộc"
               value={email}
               onChangeText={setEmail}
-              placeholder="nhap@email.com"
-              placeholderTextColor="#9CA3AF"
+              placeholder="name@domain.com"
               keyboardType="email-address"
               autoCapitalize="none"
             />
-          </View>
 
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Mật khẩu (*)</Text>
-            <TextInput
-              style={styles.input}
+            <ModernInput
+              label="Mật khẩu bảo mật"
+              badgeText="Tối thiểu 6 ký tự"
               value={password}
               onChangeText={setPassword}
-              placeholder="Tối thiểu 6 ký tự"
-              placeholderTextColor="#9CA3AF"
+              placeholder="Nhập mật khẩu của bạn"
               secureTextEntry
             />
-          </View>
 
-          {isRegisterMode && (
-            <>
-              <View style={styles.fieldGroup}>
-                <Text style={styles.label}>Họ và tên</Text>
-                <TextInput
-                  style={styles.input}
+            {isRegisterMode ? (
+              <View style={styles.extraSection}>
+                <View style={styles.dividerRow}>
+                  <View style={styles.dividerLine} />
+                  <Text style={styles.dividerLabel}>
+                    THÔNG TIN HỒ SƠ FIRESTORE
+                  </Text>
+                  <View style={styles.dividerLine} />
+                </View>
+
+                <ModernInput
+                  label="Họ và tên"
                   value={fullName}
                   onChangeText={setFullName}
-                  placeholder="Nhập họ và tên"
-                  placeholderTextColor="#9CA3AF"
+                  placeholder="Nhập họ và tên đầy đủ"
                 />
-              </View>
 
-              <View style={styles.fieldGroup}>
-                <Text style={styles.label}>Số điện thoại</Text>
-                <TextInput
-                  style={styles.input}
+                <ModernInput
+                  label="Số điện thoại"
                   value={phone}
                   onChangeText={setPhone}
-                  placeholder="Nhập số điện thoại"
-                  placeholderTextColor="#9CA3AF"
+                  placeholder="Ví dụ: 0987654321"
                   keyboardType="phone-pad"
                 />
-              </View>
 
-              <View style={styles.fieldGroup}>
-                <Text style={styles.label}>Địa chỉ</Text>
-                <TextInput
-                  style={[styles.input, styles.multilineInput]}
+                <ModernInput
+                  label="Địa chỉ liên hệ"
                   value={address}
                   onChangeText={setAddress}
-                  placeholder="Nhập địa chỉ liên hệ"
-                  placeholderTextColor="#9CA3AF"
+                  placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố"
                   multiline
                 />
               </View>
-            </>
-          )}
+            ) : null}
 
-          <Pressable
-            style={({ pressed }) => [
-              styles.primaryBtn,
-              pressed && styles.btnPressed,
-              loading && styles.btnDisabled,
-            ]}
-            onPress={handleSubmit}
-            disabled={loading}>
-            {loading ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text style={styles.primaryBtnText}>
-                {isRegisterMode
-                  ? 'Tạo tài khoản Firebase'
-                  : 'Đăng nhập với Firebase'}
-              </Text>
-            )}
-          </Pressable>
+            <PrimaryButton
+              title={
+                isRegisterMode
+                  ? 'Đăng ký & Lưu hồ sơ lên Firebase'
+                  : 'Đăng nhập vào hệ thống'
+              }
+              subtitle={
+                isRegisterMode
+                  ? 'Tự động khởi tạo Auth & Cloud Firestore'
+                  : 'Xác thực qua Firebase Authentication'
+              }
+              onPress={handleSubmit}
+              loading={loading}
+              style={styles.submitBtn}
+            />
+          </View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -212,132 +217,168 @@ export default function AuthScreen({ onLogin, onRegister }) {
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: COLORS.bg,
   },
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    padding: 18,
+    paddingHorizontal: 18,
+    paddingVertical: 28,
   },
-  card: {
-    maxWidth: 520,
+  authContainer: {
+    maxWidth: 500,
     width: '100%',
     alignSelf: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 22,
+    backgroundColor: COLORS.surface,
+    borderRadius: 24,
+    overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
+    borderColor: COLORS.border,
+    shadowColor: '#0F172A',
+    shadowOpacity: 0.08,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 5,
   },
-  title: {
+  heroBanner: {
+    backgroundColor: COLORS.darkSurface,
+    paddingHorizontal: 26,
+    paddingTop: 28,
+    paddingBottom: 26,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  heroGlowCircle1: {
+    position: 'absolute',
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: 'rgba(79, 70, 229, 0.25)',
+    top: -60,
+    right: -40,
+  },
+  heroGlowCircle2: {
+    position: 'absolute',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(13, 148, 136, 0.2)',
+    bottom: -40,
+    left: -30,
+  },
+  heroBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 10,
+  },
+  brandMark: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  brandFlameInner: {
+    width: 14,
+    height: 14,
+    borderRadius: 4,
+    backgroundColor: '#FFFFFF',
+    transform: [{ rotate: '45deg' }],
+  },
+  liveTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.14)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+  },
+  liveDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: COLORS.success,
+    marginRight: 7,
+  },
+  liveTagText: {
+    color: '#E2E8F0',
+    fontSize: 10.5,
+    fontWeight: '800',
+    letterSpacing: 0.7,
+  },
+  heroTitle: {
+    color: '#FFFFFF',
     fontSize: 24,
     fontWeight: '800',
-    color: '#111827',
-    marginBottom: 6,
+    letterSpacing: -0.3,
+    marginBottom: 8,
   },
-  subtitle: {
+  heroSubtitle: {
+    color: '#94A3B8',
     fontSize: 13.5,
-    color: '#6B7280',
-    lineHeight: 19,
-    marginBottom: 18,
+    lineHeight: 20,
   },
-  tabSwitch: {
+  formBody: {
+    padding: 24,
+  },
+  segmentedControl: {
     flexDirection: 'row',
-    backgroundColor: '#F3F4F6',
-    borderRadius: 12,
+    backgroundColor: COLORS.surfaceMuted,
+    borderRadius: 14,
     padding: 4,
-    marginBottom: 16,
+    marginBottom: 22,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
-  tabOption: {
+  segmentItem: {
     flex: 1,
-    paddingVertical: 10,
-    borderRadius: 9,
-    alignItems: 'center',
-  },
-  tabOptionActive: {
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  tabOptionText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#6B7280',
-  },
-  tabOptionTextActive: {
-    color: '#4F46E5',
-    fontWeight: '700',
-  },
-  feedbackBox: {
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 14,
-    borderWidth: 1,
-  },
-  feedbackError: {
-    backgroundColor: '#FEF2F2',
-    borderColor: '#FECACA',
-  },
-  feedbackInfo: {
-    backgroundColor: '#EFF6FF',
-    borderColor: '#BFDBFE',
-  },
-  feedbackText: {
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  feedbackErrorText: {
-    color: '#B91C1C',
-  },
-  feedbackInfoText: {
-    color: '#1D4ED8',
-  },
-  fieldGroup: {
-    marginBottom: 13,
-  },
-  label: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 6,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 10,
-    backgroundColor: '#F9FAFB',
-    paddingHorizontal: 13,
     paddingVertical: 11,
-    fontSize: 15,
-    color: '#111827',
-  },
-  multilineInput: {
-    minHeight: 68,
-    textAlignVertical: 'top',
-  },
-  primaryBtn: {
-    backgroundColor: '#4F46E5',
-    borderRadius: 12,
-    paddingVertical: 14,
+    borderRadius: 10,
     alignItems: 'center',
-    marginTop: 6,
   },
-  btnPressed: {
-    opacity: 0.85,
+  segmentItemActive: {
+    backgroundColor: COLORS.surface,
+    shadowColor: '#0F172A',
+    shadowOpacity: 0.07,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
-  btnDisabled: {
-    opacity: 0.6,
-  },
-  primaryBtnText: {
-    color: '#FFFFFF',
-    fontSize: 15.5,
+  segmentText: {
+    fontSize: 13.5,
     fontWeight: '700',
+    color: COLORS.textSecondary,
+  },
+  segmentTextActive: {
+    color: COLORS.primary,
+    fontWeight: '800',
+  },
+  extraSection: {
+    marginTop: 4,
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    marginTop: 4,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: COLORS.border,
+  },
+  dividerLabel: {
+    paddingHorizontal: 10,
+    fontSize: 10.5,
+    fontWeight: '800',
+    color: COLORS.textMuted,
+    letterSpacing: 0.8,
+  },
+  submitBtn: {
+    marginTop: 6,
   },
 });

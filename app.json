@@ -15,6 +15,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.se1990nj.firebaseapp",
       "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
         "UIBackgroundModes": [
           "remote-notification"
         ]

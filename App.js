@@ -29,6 +29,7 @@ import {
 import AuthScreen from './src/components/AuthScreen';
 import ProfileTab from './src/components/ProfileTab';
 import FcmTab from './src/components/FcmTab';
+import { COLORS } from './src/components/UiPrimitives';
 
 export default function App() {
   const [initializing, setInitializing] = useState(true);
@@ -56,7 +57,6 @@ export default function App() {
     }
   }, []);
 
-  // Lắng nghe phiên đăng nhập Firebase Authentication & Firestore
   useEffect(() => {
     let isMounted = true;
 
@@ -78,14 +78,14 @@ export default function App() {
     };
   }, [initFcmAndHistory]);
 
-  // Đăng ký lắng nghe sự kiện nhận Push Notification (Foreground & Background Tap)
   useEffect(() => {
     const cleanupListeners = setupFcmNotificationListeners({
       onNotificationReceived: async (notif) => {
         const updated = await appendNotificationHistory(notif);
         setNotifications(updated);
         setLatestToast({
-          title: `🔔 ${notif.title}`,
+          tag: 'FOREGROUND FCM',
+          title: notif.title,
           body: notif.body,
         });
       },
@@ -93,7 +93,8 @@ export default function App() {
         const updated = await appendNotificationHistory(notif);
         setNotifications(updated);
         setLatestToast({
-          title: `👆 Đã mở từ thông báo: ${notif.title}`,
+          tag: 'OPENED FROM NOTIFICATION',
+          title: notif.title,
           body: notif.body,
         });
         setActiveTab('fcm');
@@ -107,7 +108,6 @@ export default function App() {
     };
   }, []);
 
-  // Tự ẩn Toast thông báo sau 5 giây
   useEffect(() => {
     if (!latestToast) return;
     const timer = setTimeout(() => {
@@ -158,95 +158,139 @@ export default function App() {
   if (initializing) {
     return (
       <SafeAreaView style={styles.loadingScreen}>
-        <ActivityIndicator size="large" color="#4F46E5" />
-        <Text style={styles.loadingText}>
-          Đang kết nối Firebase Authentication & FCM...
-        </Text>
+        <View style={styles.loadingCard}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingTitle}>Firebase Cloud Suite</Text>
+          <Text style={styles.loadingSubtitle}>
+            Đang đồng bộ phiên đăng nhập & dịch vụ thông báo đẩy...
+          </Text>
+        </View>
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.darkSurface} />
 
-      {/* Toast hiển thị khi có Push Notification tới */}
-      {latestToast && (
-        <Pressable
-          style={styles.toastBanner}
-          onPress={() => {
-            setActiveTab('fcm');
-            setLatestToast(null);
-          }}>
-          <View style={styles.toastTextWrap}>
-            <Text style={styles.toastTitle}>{latestToast.title}</Text>
-            <Text style={styles.toastBody} numberOfLines={2}>
-              {latestToast.body}
-            </Text>
-          </View>
-          <Text style={styles.toastDismiss}>Xem →</Text>
-        </Pressable>
-      )}
+      {/* Floating Push Notification Toast */}
+      {latestToast ? (
+        <View style={styles.toastWrapper}>
+          <Pressable
+            style={styles.toastBanner}
+            onPress={() => {
+              setActiveTab('fcm');
+              setLatestToast(null);
+            }}>
+            <View style={styles.toastIndicator} />
+            <View style={styles.toastContent}>
+              <Text style={styles.toastTag}>{latestToast.tag}</Text>
+              <Text style={styles.toastTitle} numberOfLines={1}>
+                {latestToast.title}
+              </Text>
+              <Text style={styles.toastBody} numberOfLines={2}>
+                {latestToast.body}
+              </Text>
+            </View>
+            <View style={styles.toastActionChip}>
+              <Text style={styles.toastActionText}>Chi tiết</Text>
+            </View>
+          </Pressable>
+        </View>
+      ) : null}
 
       {!user ? (
         <AuthScreen onLogin={handleLogin} onRegister={handleRegister} />
       ) : (
         <View style={styles.mainWrapper}>
-          {/* Thanh điều hướng trên cùng */}
-          <View style={styles.topBar}>
-            <View style={styles.topBarLeft}>
-              <Text style={styles.appTitle}>Firebase Manager</Text>
-              <View style={styles.modePillLive}>
-                <Text style={styles.modePillText}>● Firebase Connected</Text>
+          {/* Dark Top Navigation Header */}
+          <View style={styles.topHeader}>
+            <View style={styles.topHeaderInner}>
+              <View style={styles.brandSection}>
+                <View style={styles.logoMark}>
+                  <View style={styles.logoDiamond} />
+                </View>
+                <View>
+                  <View style={styles.brandTitleRow}>
+                    <Text style={styles.brandTitle}>Firebase Cloud</Text>
+                    <View style={styles.liveStatusBadge}>
+                      <View style={styles.liveDot} />
+                      <Text style={styles.liveStatusText}>LIVE</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.brandUserEmail} numberOfLines={1}>
+                    {user?.email}
+                  </Text>
+                </View>
               </View>
+
+              <Pressable
+                style={({ pressed }) => [
+                  styles.logoutBtn,
+                  pressed && styles.logoutBtnPressed,
+                ]}
+                onPress={logoutUserFromFirebase}>
+                <Text style={styles.logoutBtnText}>Đăng xuất</Text>
+              </Pressable>
             </View>
 
-            <Pressable
-              style={styles.logoutBtn}
-              onPress={logoutUserFromFirebase}>
-              <Text style={styles.logoutBtnText}>Đăng xuất</Text>
-            </Pressable>
+            {/* Segmented Tab Bar */}
+            <View style={styles.tabBarContainer}>
+              <View style={styles.tabBarTrack}>
+                <Pressable
+                  style={[
+                    styles.tabButton,
+                    activeTab === 'profile' && styles.tabButtonActive,
+                  ]}
+                  onPress={() => setActiveTab('profile')}>
+                  <Text
+                    style={[
+                      styles.tabButtonText,
+                      activeTab === 'profile' && styles.tabButtonTextActive,
+                    ]}>
+                    Hồ sơ & Bảo mật
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  style={[
+                    styles.tabButton,
+                    activeTab === 'fcm' && styles.tabButtonActive,
+                  ]}
+                  onPress={() => setActiveTab('fcm')}>
+                  <Text
+                    style={[
+                      styles.tabButtonText,
+                      activeTab === 'fcm' && styles.tabButtonTextActive,
+                    ]}>
+                    Push Notification (FCM)
+                  </Text>
+                  {notifications.length > 0 ? (
+                    <View
+                      style={[
+                        styles.counterBadge,
+                        activeTab === 'fcm' && styles.counterBadgeActive,
+                      ]}>
+                      <Text
+                        style={[
+                          styles.counterBadgeText,
+                          activeTab === 'fcm' && styles.counterBadgeTextActive,
+                        ]}>
+                        {notifications.length}
+                      </Text>
+                    </View>
+                  ) : null}
+                </Pressable>
+              </View>
+            </View>
           </View>
 
-          {/* Thanh chuyển Tab */}
-          <View style={styles.navTabs}>
-            <Pressable
-              style={[
-                styles.navTabBtn,
-                activeTab === 'profile' && styles.navTabBtnActive,
-              ]}
-              onPress={() => setActiveTab('profile')}>
-              <Text
-                style={[
-                  styles.navTabText,
-                  activeTab === 'profile' && styles.navTabTextActive,
-                ]}>
-                👤 Thông tin người dùng
-              </Text>
-            </Pressable>
-
-            <Pressable
-              style={[
-                styles.navTabBtn,
-                activeTab === 'fcm' && styles.navTabBtnActive,
-              ]}
-              onPress={() => setActiveTab('fcm')}>
-              <Text
-                style={[
-                  styles.navTabText,
-                  activeTab === 'fcm' && styles.navTabTextActive,
-                ]}>
-                🔔 Push Notification (FCM)
-                {notifications.length > 0 ? ` (${notifications.length})` : ''}
-              </Text>
-            </Pressable>
-          </View>
-
-          {/* Nội dung chính */}
+          {/* Main Content Scroll */}
           <ScrollView
             style={styles.scrollArea}
             contentContainerStyle={styles.scrollContent}
-            keyboardShouldPersistTaps="handled">
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}>
             <View style={styles.centeredContent}>
               {activeTab === 'profile' ? (
                 <ProfileTab
@@ -277,141 +321,253 @@ export default function App() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: COLORS.bg,
   },
   loadingScreen: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: COLORS.bg,
     padding: 24,
   },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 14,
-    color: '#4B5563',
-    fontWeight: '600',
+  loadingCard: {
+    backgroundColor: COLORS.surface,
+    paddingVertical: 32,
+    paddingHorizontal: 28,
+    borderRadius: 22,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    maxWidth: 340,
+    width: '100%',
+  },
+  loadingTitle: {
+    marginTop: 16,
+    fontSize: 17,
+    fontWeight: '800',
+    color: COLORS.textMain,
+  },
+  loadingSubtitle: {
+    marginTop: 6,
+    fontSize: 13,
+    color: COLORS.textSecondary,
     textAlign: 'center',
+    lineHeight: 19,
+  },
+  toastWrapper: {
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    backgroundColor: COLORS.darkSurface,
   },
   toastBanner: {
-    backgroundColor: '#1E1B4B',
-    marginHorizontal: 14,
-    marginTop: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 12,
+    maxWidth: 720,
+    width: '100%',
+    alignSelf: 'center',
+    backgroundColor: COLORS.darkElevated,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(129, 140, 248, 0.35)',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    shadowColor: '#000',
-    shadowOpacity: 0.18,
-    shadowRadius: 8,
-    elevation: 4,
+    overflow: 'hidden',
+    paddingRight: 14,
   },
-  toastTextWrap: {
+  toastIndicator: {
+    width: 5,
+    alignSelf: 'stretch',
+    backgroundColor: COLORS.primary,
+  },
+  toastContent: {
     flex: 1,
-    marginRight: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+  },
+  toastTag: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: '#818CF8',
+    letterSpacing: 0.7,
+    marginBottom: 2,
   },
   toastTitle: {
     color: '#FFFFFF',
-    fontSize: 13.5,
+    fontSize: 14,
     fontWeight: '800',
-    marginBottom: 2,
   },
   toastBody: {
-    color: '#E0E7FF',
+    color: '#CBD5E1',
     fontSize: 12.5,
+    marginTop: 2,
   },
-  toastDismiss: {
-    color: '#A5B4FC',
-    fontSize: 12.5,
+  toastActionChip: {
+    backgroundColor: 'rgba(79, 70, 229, 0.35)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  toastActionText: {
+    color: '#E0E7FF',
+    fontSize: 11.5,
     fontWeight: '700',
   },
   mainWrapper: {
     flex: 1,
   },
-  topBar: {
-    backgroundColor: '#FFFFFF',
+  topHeader: {
+    backgroundColor: COLORS.darkSurface,
+    paddingTop: 14,
+    paddingBottom: 16,
     paddingHorizontal: 16,
-    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: COLORS.darkElevated,
+  },
+  topHeaderInner: {
+    maxWidth: 720,
+    width: '100%',
+    alignSelf: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 8,
+    marginBottom: 16,
+    gap: 12,
   },
-  topBarLeft: {
+  brandSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 12,
+  },
+  logoMark: {
+    width: 38,
+    height: 38,
+    borderRadius: 11,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoDiamond: {
+    width: 14,
+    height: 14,
+    borderRadius: 3,
+    backgroundColor: '#FFFFFF',
+    transform: [{ rotate: '45deg' }],
+  },
+  brandTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    flexWrap: 'wrap',
   },
-  appTitle: {
-    fontSize: 18,
+  brandTitle: {
+    color: '#FFFFFF',
+    fontSize: 17,
     fontWeight: '800',
-    color: '#111827',
+    letterSpacing: -0.2,
   },
-  modePillLive: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+  liveStatusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(16, 185, 129, 0.16)',
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.4)',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
     borderRadius: 999,
-    backgroundColor: '#D1FAE5',
   },
-  modePillText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#065F46',
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: COLORS.success,
+    marginRight: 5,
+  },
+  liveStatusText: {
+    color: '#6EE7B7',
+    fontSize: 9.5,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+  },
+  brandUserEmail: {
+    color: '#94A3B8',
+    fontSize: 12,
+    marginTop: 2,
   },
   logoutBtn: {
-    paddingHorizontal: 11,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: '#FEE2E2',
+    backgroundColor: 'rgba(239, 68, 68, 0.16)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.38)',
+    paddingHorizontal: 13,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  logoutBtnPressed: {
+    opacity: 0.75,
   },
   logoutBtnText: {
-    fontSize: 12,
+    color: '#FCA5A5',
+    fontSize: 12.5,
     fontWeight: '700',
-    color: '#B91C1C',
   },
-  navTabs: {
+  tabBarContainer: {
+    maxWidth: 720,
+    width: '100%',
+    alignSelf: 'center',
+  },
+  tabBarTrack: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    paddingBottom: 10,
-    paddingTop: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-    gap: 10,
+    backgroundColor: COLORS.darkElevated,
+    borderRadius: 13,
+    padding: 4,
+    gap: 6,
   },
-  navTabBtn: {
+  tabButton: {
     flex: 1,
-    paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: '#F3F4F6',
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    gap: 7,
   },
-  navTabBtnActive: {
-    backgroundColor: '#4F46E5',
+  tabButtonActive: {
+    backgroundColor: COLORS.primary,
   },
-  navTabText: {
+  tabButtonText: {
+    color: '#94A3B8',
     fontSize: 13,
     fontWeight: '700',
-    color: '#4B5563',
   },
-  navTabTextActive: {
+  tabButtonTextActive: {
     color: '#FFFFFF',
+    fontWeight: '800',
+  },
+  counterBadge: {
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    paddingHorizontal: 7,
+    paddingVertical: 1.5,
+    borderRadius: 999,
+  },
+  counterBadgeActive: {
+    backgroundColor: '#FFFFFF',
+  },
+  counterBadgeText: {
+    color: '#E2E8F0',
+    fontSize: 10.5,
+    fontWeight: '800',
+  },
+  counterBadgeTextActive: {
+    color: COLORS.primary,
   },
   scrollArea: {
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
-    paddingBottom: 40,
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 44,
   },
   centeredContent: {
-    maxWidth: 680,
+    maxWidth: 720,
     width: '100%',
     alignSelf: 'center',
   },

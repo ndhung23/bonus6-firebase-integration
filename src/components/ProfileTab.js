@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { StyleSheet, Text, View, Platform } from 'react-native';
 import {
-  StyleSheet,
-  Text,
-  View,
-  TextInput,
-  Pressable,
-  ActivityIndicator,
-} from 'react-native';
+  COLORS,
+  ModernInput,
+  PrimaryButton,
+  ToggleSwitch,
+  SectionHeader,
+  FeedbackAlert,
+} from './UiPrimitives';
 
 export default function ProfileTab({
   user,
@@ -64,13 +65,13 @@ export default function ProfileTab({
         type: 'success',
         text:
           result?.message ||
-          'Cập nhật thông tin người dùng (Email, SĐT, Mật khẩu, Địa chỉ) thành công!',
+          'Đã đồng bộ thông tin người dùng (Email, Số điện thoại, Mật khẩu, Địa chỉ) lên Firebase thành công.',
       });
 
       if (notifyOnSave && onTriggerProfilePush) {
         await onTriggerProfilePush({
-          title: 'Cập nhật hồ sơ thành công ✅',
-          body: `Đã lưu Email: ${email} | SĐT: ${phone || 'Chưa nhập'} | Địa chỉ: ${
+          title: 'Hồ sơ Firebase đã được cập nhật',
+          body: `Email: ${email} • SĐT: ${phone || 'Chưa nhập'} • Địa chỉ: ${
             address || 'Chưa nhập'
           }`,
           data: {
@@ -94,203 +95,180 @@ export default function ProfileTab({
     }
   };
 
+  const initials = (user?.fullName || user?.email || 'U')
+    .trim()
+    .charAt(0)
+    .toUpperCase();
+
   return (
     <View style={styles.container}>
-      {/* Thẻ tóm tắt thông tin hiện tại trên Firebase */}
-      <View style={styles.summaryCard}>
-        <View style={styles.summaryHeader}>
-          <View style={styles.avatarCircle}>
-            <Text style={styles.avatarLetter}>
-              {(user?.fullName || user?.email || 'U').charAt(0).toUpperCase()}
-            </Text>
+      {/* Bento Hero Profile Overview */}
+      <View style={styles.heroCard}>
+        <View style={styles.heroBanner}>
+          <View style={styles.heroBannerOrb} />
+          <View style={styles.avatarRing}>
+            <View style={styles.avatarCircle}>
+              <Text style={styles.avatarText}>{initials}</Text>
+            </View>
           </View>
-          <View style={styles.summaryInfo}>
-            <Text style={styles.summaryName}>
-              {user?.fullName || 'Người dùng Firebase'}
+          <View style={styles.heroIdentity}>
+            <View style={styles.verifiedRow}>
+              <Text style={styles.heroName} numberOfLines={1}>
+                {user?.fullName || 'Tài khoản Firebase'}
+              </Text>
+              <View style={styles.verifiedPill}>
+                <Text style={styles.verifiedPillText}>VERIFIED</Text>
+              </View>
+            </View>
+            <Text style={styles.heroUid} selectable>
+              UID: {user?.uid}
             </Text>
-            <Text style={styles.summaryUid}>UID: {user?.uid}</Text>
-            <Text style={styles.summaryTime}>
-              Đồng bộ lần cuối:{' '}
+            <Text style={styles.heroSyncTime}>
+              Đồng bộ Realtime:{' '}
               {user?.updatedAt
                 ? new Date(user.updatedAt).toLocaleString('vi-VN')
-                : 'Vừa xong'}
+                : 'Đang kết nối'}
             </Text>
           </View>
         </View>
 
-        <View style={styles.summaryGrid}>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryLabel}>📧 Email hiện tại</Text>
-            <Text style={styles.summaryValue}>{user?.email || 'Chưa cập nhật'}</Text>
+        <View style={styles.bentoGrid}>
+          <View style={styles.bentoTile}>
+            <Text style={styles.bentoLabel}>ĐỊA CHỈ EMAIL</Text>
+            <Text style={styles.bentoValue} numberOfLines={1}>
+              {user?.email || 'Chưa thiết lập'}
+            </Text>
           </View>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryLabel}>📱 Số điện thoại</Text>
-            <Text style={styles.summaryValue}>{user?.phone || 'Chưa cập nhật'}</Text>
+
+          <View style={styles.bentoTile}>
+            <Text style={styles.bentoLabel}>SỐ ĐIỆN THOẠI</Text>
+            <Text style={styles.bentoValue} numberOfLines={1}>
+              {user?.phone || 'Chưa thiết lập'}
+            </Text>
           </View>
-          <View style={styles.summaryItemFull}>
-            <Text style={styles.summaryLabel}>📍 Địa chỉ liên hệ</Text>
-            <Text style={styles.summaryValue}>
-              {user?.address || 'Chưa cập nhật'}
+
+          <View style={[styles.bentoTile, styles.bentoTileFull]}>
+            <Text style={styles.bentoLabel}>ĐỊA CHỈ LIÊN HỆ</Text>
+            <Text style={styles.bentoValue}>
+              {user?.address || 'Chưa thiết lập địa chỉ'}
             </Text>
           </View>
         </View>
       </View>
 
-      {/* Form cập nhật thông tin người dùng */}
-      <View style={styles.formCard}>
-        <Text style={styles.sectionTitle}>
-          ✏️ Cập nhật thông tin người dùng
-        </Text>
-        <Text style={styles.sectionDesc}>
-          Thay đổi Email, Số điện thoại, Mật khẩu và Địa chỉ. Dữ liệu được đồng bộ trực tiếp với Firebase Authentication & Cloud Firestore.
-        </Text>
+      {statusBanner ? (
+        <FeedbackAlert
+          type={statusBanner.type}
+          message={statusBanner.text}
+          onDismiss={() => setStatusBanner(null)}
+        />
+      ) : null}
 
-        {statusBanner && (
-          <View
-            style={[
-              styles.banner,
-              statusBanner.type === 'success'
-                ? styles.bannerSuccess
-                : styles.bannerError,
-            ]}>
-            <Text
-              style={[
-                styles.bannerText,
-                statusBanner.type === 'success'
-                  ? styles.bannerSuccessText
-                  : styles.bannerErrorText,
-              ]}>
-              {statusBanner.text}
-            </Text>
+      {/* Card 1: Thông tin cá nhân & Liên hệ */}
+      <View style={styles.surfaceCard}>
+        <SectionHeader
+          tag="CLOUD FIRESTORE + AUTH"
+          title="Thông tin định danh & Liên hệ"
+          subtitle="Cập nhật trực tiếp Email, Số điện thoại và Địa chỉ của bạn trên hệ thống Firebase."
+        />
+
+        <ModernInput
+          label="Họ và tên hiển thị"
+          badgeText="DisplayName"
+          value={fullName}
+          onChangeText={setFullName}
+          placeholder="Nhập họ và tên của bạn"
+        />
+
+        <View style={styles.twoColRow}>
+          <View style={styles.colItem}>
+            <ModernInput
+              label="1. Địa chỉ Email"
+              badgeText="Firebase Auth"
+              value={email}
+              onChangeText={setEmail}
+              placeholder="name@domain.com"
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
           </View>
-        )}
 
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Họ và tên hiển thị</Text>
-          <TextInput
-            style={styles.input}
-            value={fullName}
-            onChangeText={setFullName}
-            placeholder="Nhập họ tên"
-            placeholderTextColor="#9CA3AF"
-          />
+          <View style={styles.colItem}>
+            <ModernInput
+              label="2. Số điện thoại"
+              badgeText="8 - 15 số"
+              value={phone}
+              onChangeText={setPhone}
+              placeholder="0987654321"
+              keyboardType="phone-pad"
+            />
+          </View>
         </View>
 
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>1. Email người dùng (*)</Text>
-          <TextInput
-            style={styles.input}
-            value={email}
-            onChangeText={setEmail}
-            placeholder="email@example.com"
-            placeholderTextColor="#9CA3AF"
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-        </View>
+        <ModernInput
+          label="3. Địa chỉ cư trú / liên hệ"
+          badgeText="Firestore Document"
+          value={address}
+          onChangeText={setAddress}
+          placeholder="Nhập số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố"
+          multiline
+        />
+      </View>
 
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>2. Số điện thoại (*)</Text>
-          <TextInput
-            style={styles.input}
-            value={phone}
-            onChangeText={setPhone}
-            placeholder="VD: 0987654321"
-            placeholderTextColor="#9CA3AF"
-            keyboardType="phone-pad"
-          />
-        </View>
+      {/* Card 2: Đổi mật khẩu & Xác thực bảo mật */}
+      <View style={styles.surfaceCard}>
+        <SectionHeader
+          tag="SECURITY & CREDENTIALS"
+          title="4. Quản lý Mật khẩu bảo mật"
+          subtitle="Để trống các ô mật khẩu mới nếu bạn chỉ muốn cập nhật thông tin liên hệ ở trên."
+        />
 
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>3. Địa chỉ (*)</Text>
-          <TextInput
-            style={[styles.input, styles.multilineInput]}
-            value={address}
-            onChangeText={setAddress}
-            placeholder="Nhập số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố"
-            placeholderTextColor="#9CA3AF"
-            multiline
-          />
-        </View>
+        <ModernInput
+          label="Mật khẩu hiện tại"
+          badgeText="Xác thực Re-Auth"
+          value={currentPassword}
+          onChangeText={setCurrentPassword}
+          placeholder="Nhập mật khẩu hiện tại khi đổi Email hoặc Mật khẩu mới"
+          secureTextEntry
+          helperText="Firebase yêu cầu xác thực lại mật khẩu hiện tại trước khi thay đổi thông tin nhạy cảm."
+        />
 
-        <View style={styles.divider} />
-
-        <Text style={styles.subSectionTitle}>
-          4. Cập nhật Mật khẩu (Để trống nếu giữ nguyên mật khẩu cũ)
-        </Text>
-
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>
-            Mật khẩu hiện tại (cần khi đổi Mật khẩu hoặc đổi Email trên Firebase)
-          </Text>
-          <TextInput
-            style={styles.input}
-            value={currentPassword}
-            onChangeText={setCurrentPassword}
-            placeholder="Nhập mật khẩu hiện tại để xác thực"
-            placeholderTextColor="#9CA3AF"
-            secureTextEntry
-          />
-        </View>
-
-        <View style={styles.rowFields}>
-          <View style={[styles.fieldGroup, styles.halfField]}>
-            <Text style={styles.label}>Mật khẩu mới</Text>
-            <TextInput
-              style={styles.input}
+        <View style={styles.twoColRow}>
+          <View style={styles.colItem}>
+            <ModernInput
+              label="Mật khẩu mới"
+              badgeText="Tối thiểu 6 ký tự"
               value={newPassword}
               onChangeText={setNewPassword}
-              placeholder="Ít nhất 6 ký tự"
-              placeholderTextColor="#9CA3AF"
+              placeholder="Nhập mật khẩu mới"
               secureTextEntry
             />
           </View>
 
-          <View style={[styles.fieldGroup, styles.halfField]}>
-            <Text style={styles.label}>Xác nhận mật khẩu mới</Text>
-            <TextInput
-              style={styles.input}
+          <View style={styles.colItem}>
+            <ModernInput
+              label="Xác nhận mật khẩu mới"
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               placeholder="Nhập lại mật khẩu mới"
-              placeholderTextColor="#9CA3AF"
               secureTextEntry
             />
           </View>
         </View>
 
-        {/* Tùy chọn bắn thông báo FCM khi cập nhật */}
-        <Pressable
-          style={styles.checkboxRow}
-          onPress={() => setNotifyOnSave(!notifyOnSave)}>
-          <View
-            style={[
-              styles.checkbox,
-              notifyOnSave && styles.checkboxChecked,
-            ]}>
-            {notifyOnSave && <Text style={styles.checkmark}>✓</Text>}
-          </View>
-          <Text style={styles.checkboxLabel}>
-            Gửi Push Notification xác nhận ngay sau khi cập nhật thông tin
-          </Text>
-        </Pressable>
+        <ToggleSwitch
+          value={notifyOnSave}
+          onValueChange={setNotifyOnSave}
+          label="Bắn Push Notification sau khi cập nhật"
+          description="Tự động gửi một thông báo đẩy xác nhận thay đổi hồ sơ tới thiết bị này."
+        />
 
-        <Pressable
-          style={({ pressed }) => [
-            styles.saveBtn,
-            pressed && styles.btnPressed,
-            saving && styles.btnDisabled,
-          ]}
+        <PrimaryButton
+          title="Lưu & Đồng bộ lên Firebase Cloud"
+          subtitle="Cập nhật đồng thời Firebase Authentication & Cloud Firestore"
           onPress={handleSave}
-          disabled={saving}>
-          {saving ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <Text style={styles.saveBtnText}>
-              💾 Lưu thay đổi lên Firebase
-            </Text>
-          )}
-        </Pressable>
+          loading={saving}
+        />
       </View>
     </View>
   );
@@ -298,219 +276,148 @@ export default function ProfileTab({
 
 const styles = StyleSheet.create({
   container: {
-    gap: 16,
+    gap: 18,
   },
-  summaryCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 18,
+  heroCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 22,
+    overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: COLORS.border,
+    shadowColor: '#0F172A',
+    shadowOpacity: 0.06,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
   },
-  summaryHeader: {
+  heroBanner: {
+    backgroundColor: COLORS.darkSurface,
+    padding: 22,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 14,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  heroBannerOrb: {
+    position: 'absolute',
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    backgroundColor: 'rgba(79, 70, 229, 0.24)',
+    right: -40,
+    top: -50,
+  },
+  avatarRing: {
+    padding: 3,
+    borderRadius: 34,
+    borderWidth: 2,
+    borderColor: 'rgba(99, 102, 241, 0.6)',
+    marginRight: 16,
   },
   avatarCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: '#4F46E5',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 14,
   },
-  avatarLetter: {
+  avatarText: {
     color: '#FFFFFF',
-    fontSize: 22,
+    fontSize: 23,
     fontWeight: '800',
   },
-  summaryInfo: {
+  heroIdentity: {
     flex: 1,
   },
-  summaryName: {
-    fontSize: 17,
+  verifiedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  heroName: {
+    color: '#FFFFFF',
+    fontSize: 19,
     fontWeight: '800',
-    color: '#111827',
+    letterSpacing: -0.2,
   },
-  summaryUid: {
+  verifiedPill: {
+    backgroundColor: 'rgba(16, 185, 129, 0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.45)',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  verifiedPillText: {
+    color: '#6EE7B7',
+    fontSize: 9.5,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+  },
+  heroUid: {
+    color: '#94A3B8',
     fontSize: 12,
-    color: '#6B7280',
-    marginTop: 2,
+    marginTop: 4,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },
-  summaryTime: {
+  heroSyncTime: {
+    color: '#A5B4FC',
     fontSize: 11.5,
-    color: '#4F46E5',
-    marginTop: 2,
-    fontWeight: '500',
+    marginTop: 4,
+    fontWeight: '600',
   },
-  summaryGrid: {
+  bentoGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    padding: 16,
     gap: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-    paddingTop: 12,
+    backgroundColor: COLORS.surface,
   },
-  summaryItem: {
+  bentoTile: {
     flex: 1,
-    minWidth: 140,
-    backgroundColor: '#F9FAFB',
-    padding: 10,
-    borderRadius: 10,
-  },
-  summaryItemFull: {
-    width: '100%',
-    backgroundColor: '#F9FAFB',
-    padding: 10,
-    borderRadius: 10,
-  },
-  summaryLabel: {
-    fontSize: 11.5,
-    color: '#6B7280',
-    fontWeight: '600',
-    marginBottom: 3,
-  },
-  summaryValue: {
-    fontSize: 13.5,
-    color: '#111827',
-    fontWeight: '600',
-  },
-  formCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 18,
+    minWidth: 160,
+    backgroundColor: COLORS.bg,
+    borderRadius: 14,
+    padding: 13,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: COLORS.border,
   },
-  sectionTitle: {
-    fontSize: 17,
+  bentoTileFull: {
+    minWidth: '100%',
+  },
+  bentoLabel: {
+    fontSize: 10.5,
     fontWeight: '800',
-    color: '#111827',
-    marginBottom: 4,
+    color: COLORS.textMuted,
+    letterSpacing: 0.7,
+    marginBottom: 5,
   },
-  sectionDesc: {
-    fontSize: 13,
-    color: '#6B7280',
-    lineHeight: 18,
-    marginBottom: 14,
-  },
-  banner: {
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 14,
-    borderWidth: 1,
-  },
-  bannerSuccess: {
-    backgroundColor: '#ECFDF5',
-    borderColor: '#A7F3D0',
-  },
-  bannerError: {
-    backgroundColor: '#FEF2F2',
-    borderColor: '#FECACA',
-  },
-  bannerText: {
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  bannerSuccessText: {
-    color: '#065F46',
-    fontWeight: '600',
-  },
-  bannerErrorText: {
-    color: '#B91C1C',
-    fontWeight: '600',
-  },
-  fieldGroup: {
-    marginBottom: 13,
-  },
-  label: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 6,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 10,
-    backgroundColor: '#F9FAFB',
-    paddingHorizontal: 13,
-    paddingVertical: 11,
-    fontSize: 14.5,
-    color: '#111827',
-  },
-  multilineInput: {
-    minHeight: 72,
-    textAlignVertical: 'top',
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#E5E7EB',
-    marginVertical: 14,
-  },
-  subSectionTitle: {
+  bentoValue: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#1F2937',
-    marginBottom: 12,
+    color: COLORS.textMain,
   },
-  rowFields: {
+  surfaceCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 22,
+    padding: 22,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: '#0F172A',
+    shadowOpacity: 0.05,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
+  },
+  twoColRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: 14,
   },
-  halfField: {
+  colItem: {
     flex: 1,
-    minWidth: 180,
-  },
-  checkboxRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-    marginBottom: 14,
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 6,
-    borderWidth: 1.5,
-    borderColor: '#9CA3AF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
-  },
-  checkboxChecked: {
-    backgroundColor: '#4F46E5',
-    borderColor: '#4F46E5',
-  },
-  checkmark: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  checkboxLabel: {
-    fontSize: 13,
-    color: '#374151',
-    flex: 1,
-  },
-  saveBtn: {
-    backgroundColor: '#4F46E5',
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  btnPressed: {
-    opacity: 0.85,
-  },
-  btnDisabled: {
-    opacity: 0.6,
-  },
-  saveBtnText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '700',
+    minWidth: 210,
   },
 });
-
