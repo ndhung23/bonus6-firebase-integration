@@ -1,0 +1,64 @@
+{
+  "expo": {
+    "name": "Firebase Auth & FCM App",
+    "slug": "bonus6-firebase-integration",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.se1990nj.firebaseapp",
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "remote-notification"
+        ]
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.se1990nj.firebaseapp",
+      "versionCode": 1,
+      "permissions": [
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
+        "POST_NOTIFICATIONS"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "notification": {
+      "icon": "./assets/icon.png",
+      "color": "#4F46E5",
+      "androidMode": "default",
+      "androidCollapsedTitle": "#{unread_notifications} thông báo mới"
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#4F46E5",
+          "defaultChannel": "default"
+        }
+      ],
+      "expo-font"
+    ],
+    "owner": "ndhung23",
+    "extra": {
+      "eas": {
+        "projectId": "c5c5f093-6a17-46b9-a7d3-8cfdebeec8a8"
+      }
+    }
+  }
+}
