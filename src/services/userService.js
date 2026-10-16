@@ -17,10 +17,20 @@ import {
   updateDoc,
   onSnapshot,
 } from 'firebase/firestore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { firebaseAuth, firebaseDb } from './firebaseConfig';
 
 export const formatFirebaseError = (error) => {
   const code = error?.code || '';
+  const msg = error?.message || '';
+
+  if (
+    code === 'permission-denied' ||
+    msg.includes('Missing or insufficient permissions')
+  ) {
+    return 'Quy tắc bảo mật Firestore đang chặn quyền ghi (Missing or insufficient permissions). Vui lòng vào Firebase Console -> Firestore Database -> Rules, sửa thành: allow read, write: if request.auth != null; rồi nhấn Publish.';
+  }
+
   switch (code) {
     case 'auth/invalid-email':
       return 'Địa chỉ email không hợp lệ.';
@@ -99,17 +109,24 @@ export const subscribeToUserSession = (onUserChanged) => {
             onUserChanged(initialDoc);
           }
         },
-        (err) => {
+        async (err) => {
           console.warn('Firestore snapshot error:', err?.message);
+          let cached = {};
+          try {
+            const raw = await AsyncStorage.getItem(
+              '@bonus6_local_cached_profile_' + firebaseUser.uid
+            );
+            if (raw) cached = JSON.parse(raw);
+          } catch (_) {}
           onUserChanged({
             uid: firebaseUser.uid,
-            email: firebaseUser.email || '',
-            fullName: firebaseUser.displayName || '',
-            phone: '',
-            address: '',
-            fcmToken: '',
-            expoPushToken: '',
-            updatedAt: '',
+            email: firebaseUser.email || cached.email || '',
+            fullName: firebaseUser.displayName || cached.fullName || '',
+            phone: cached.phone || '',
+            address: cached.address || '',
+            fcmToken: cached.fcmToken || '',
+            expoPushToken: cached.expoPushToken || '',
+            updatedAt: cached.updatedAt || '',
           });
         }
       );
@@ -286,11 +303,32 @@ export const updateUserProfileWithFirebase = async ({
     updatedAt: now,
   };
 
+  try {
+    await AsyncStorage.setItem(
+      '@bonus6_local_cached_profile_' + currentUser.uid,
+      JSON.stringify(updatedFields)
+    );
+  } catch (_) {}
+
   const userDocRef = doc(firebaseDb, 'users', currentUser.uid);
-  await setDoc(userDocRef, updatedFields, { merge: true });
-  statusMessages.push(
-    'Đã lưu thông tin người dùng (Email, SĐT, Địa chỉ) lên Cloud Firestore.'
-  );
+  try {
+    await setDoc(userDocRef, updatedFields, { merge: true });
+    statusMessages.push(
+      'Đã lưu thông tin người dùng (Email, SĐT, Địa chỉ) lên Cloud Firestore.'
+    );
+  } catch (dbErr) {
+    console.warn('Firestore setDoc error:', dbErr?.message);
+    if (
+      dbErr?.code === 'permission-denied' ||
+      dbErr?.message?.includes('Missing or insufficient permissions')
+    ) {
+      statusMessages.push(
+        'Đã lưu trên thiết bị. Lưu ý: Firestore đang chặn quyền ghi (vui lòng sửa Rules trên Firebase Console để đồng bộ).'
+      );
+    } else {
+      throw dbErr;
+    }
+  }
 
   return {
     updatedFields,
