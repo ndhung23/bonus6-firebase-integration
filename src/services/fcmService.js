@@ -285,11 +285,29 @@ export const setupFcmNotificationListeners = ({
           if (supported) {
             const messaging = messagingModule.getMessaging(firebaseApp);
             webUnsubscribe = messagingModule.onMessage(messaging, (payload) => {
+              const notifTitle =
+                payload?.notification?.title || 'Thông báo từ Firebase FCM';
+              const notifBody = payload?.notification?.body || '';
+              const notifData = payload?.data || {};
+
               webHandler({
-                title: payload?.notification?.title || 'FCM Message',
-                body: payload?.notification?.body || '',
-                data: payload?.data || {},
+                title: notifTitle,
+                body: notifBody,
+                data: notifData,
               });
+
+              if (
+                typeof window !== 'undefined' &&
+                'Notification' in window &&
+                window.Notification.permission === 'granted'
+              ) {
+                try {
+                  new window.Notification(notifTitle, {
+                    body: notifBody,
+                    data: notifData,
+                  });
+                } catch (_) {}
+              }
             });
           }
         })
