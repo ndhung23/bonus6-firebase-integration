@@ -15,11 +15,9 @@ export default function FcmTab({
   onRefreshToken,
   onClearHistory,
 }) {
-  const [title, setTitle] = useState('Thông báo từ Firebase FCM 🔔');
-  const [body, setBody] = useState(
-    'Xin chào! Hồ sơ người dùng của bạn đã được đồng bộ với Firebase.'
-  );
-  const [customAction, setCustomAction] = useState('OPEN_PROFILE');
+  const [title, setTitle] = useState('');
+  const [body, setBody] = useState('');
+  const [customAction, setCustomAction] = useState('');
   const [statusMsg, setStatusMsg] = useState(null);
   const [sending, setSending] = useState(false);
 
@@ -30,17 +28,19 @@ export default function FcmTab({
       await onSendPush({
         title,
         body,
-        data: {
-          action: customAction,
-          sentAt: new Date().toISOString(),
-        },
+        data: customAction.trim()
+          ? {
+              action: customAction.trim(),
+              sentAt: new Date().toISOString(),
+            }
+          : { sentAt: new Date().toISOString() },
         delaySeconds,
       });
       setStatusMsg({
         type: 'success',
         text:
           delaySeconds > 0
-            ? `Đã lên lịch bắn Push Notification sau ${delaySeconds} giây (hãy ẩn ứng dụng xuống nền để kiểm tra Background Notification)!`
+            ? `Đã lên lịch bắn Push Notification sau ${delaySeconds} giây!`
             : 'Đã gửi Push Notification thành công!',
       });
     } catch (error) {
@@ -71,7 +71,7 @@ export default function FcmTab({
     }
     setStatusMsg({
       type: 'success',
-      text: `FCM Token: ${tokenValue}`,
+      text: `Token: ${tokenValue}`,
     });
   };
 
@@ -117,20 +117,22 @@ export default function FcmTab({
 
         <View style={styles.tokenBox}>
           <View style={styles.tokenHeader}>
-            <Text style={styles.tokenTitle}>🔑 FCM Device Registration Token</Text>
-            <Pressable
-              style={styles.copyBtn}
-              onPress={() => handleCopyToken(fcmInfo?.fcmToken)}>
-              <Text style={styles.copyBtnText}>Sao chép</Text>
-            </Pressable>
+            <Text style={styles.tokenTitle}>🔑 FCM Registration Token</Text>
+            {fcmInfo?.fcmToken ? (
+              <Pressable
+                style={styles.copyBtn}
+                onPress={() => handleCopyToken(fcmInfo?.fcmToken)}>
+                <Text style={styles.copyBtnText}>Sao chép</Text>
+              </Pressable>
+            ) : null}
           </View>
           <Text selectable style={styles.tokenValue}>
-            {fcmInfo?.fcmToken || 'Đang lấy FCM Token...'}
+            {fcmInfo?.fcmToken ||
+              'Chưa có FCM Token (cấp quyền thông báo và nhấn Làm mới Token)'}
           </Text>
         </View>
 
-        {fcmInfo?.expoPushToken &&
-        fcmInfo.expoPushToken !== 'N/A (Web Platform)' ? (
+        {fcmInfo?.expoPushToken ? (
           <View style={styles.tokenBox}>
             <View style={styles.tokenHeader}>
               <Text style={styles.tokenTitle}>🚀 Expo Push Token</Text>
@@ -147,11 +149,9 @@ export default function FcmTab({
         ) : null}
       </View>
 
-      {/* Form gửi thử Push Notification */}
+      {/* Form gửi Push Notification */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>
-          🔔 Gửi thử Push Notification (Test FCM / Local Push)
-        </Text>
+        <Text style={styles.cardTitle}>🔔 Gửi Push Notification</Text>
         <Text style={styles.cardSubtitle}>
           Kiểm tra nhận thông báo đẩy trực tiếp trên thiết bị hoặc trình duyệt (hỗ trợ cả Foreground và Background).
         </Text>
@@ -188,7 +188,7 @@ export default function FcmTab({
         </View>
 
         <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Nội dung thông báo (Body)</Text>
+          <Text style={styles.label}>Nội dung thông báo (Body) (*)</Text>
           <TextInput
             style={[styles.input, styles.multilineInput]}
             value={body}
@@ -200,7 +200,7 @@ export default function FcmTab({
         </View>
 
         <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Payload Data (Custom Action)</Text>
+          <Text style={styles.label}>Payload Data (Custom Action - Tuỳ chọn)</Text>
           <TextInput
             style={styles.input}
             value={customAction}
@@ -249,7 +249,7 @@ export default function FcmTab({
         {notifications.length === 0 ? (
           <View style={styles.emptyBox}>
             <Text style={styles.emptyText}>
-              Chưa có thông báo nào. Hãy nhấn "Bắn thông báo ngay" hoặc gửi từ Firebase Console để kiểm tra!
+              Chưa có thông báo nào được nhận.
             </Text>
           </View>
         ) : (
@@ -280,27 +280,6 @@ export default function FcmTab({
             </View>
           ))
         )}
-      </View>
-
-      {/* Hướng dẫn bắn từ Firebase Console */}
-      <View style={styles.guideCard}>
-        <Text style={styles.guideTitle}>
-          💡 Hướng dẫn bắn thông báo từ Firebase Console (Cloud Messaging)
-        </Text>
-        <Text style={styles.guideStep}>
-          1. Mở Firebase Console → Chọn Project → Vào mục{' '}
-          <Text style={styles.bold}>Messaging</Text> (Cloud Messaging).
-        </Text>
-        <Text style={styles.guideStep}>
-          2. Nhấn <Text style={styles.bold}>Create your first campaign</Text> → Chọn{' '}
-          <Text style={styles.bold}>Firebase Notification messages</Text>.
-        </Text>
-        <Text style={styles.guideStep}>
-          3. Nhập Notification Title & Text → Nhấn{' '}
-          <Text style={styles.bold}>Send test message</Text> và dán{' '}
-          <Text style={styles.bold}>FCM Device Registration Token</Text> ở trên (hoặc chọn Target theo App Android) rồi nhấn{' '}
-          <Text style={styles.bold}>Publish</Text>.
-        </Text>
       </View>
     </View>
   );
@@ -582,27 +561,4 @@ const styles = StyleSheet.create({
     color: '#4F46E5',
     fontWeight: '600',
   },
-  guideCard: {
-    backgroundColor: '#EEF2FF',
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#C7D2FE',
-  },
-  guideTitle: {
-    fontSize: 14.5,
-    fontWeight: '800',
-    color: '#312E81',
-    marginBottom: 8,
-  },
-  guideStep: {
-    fontSize: 12.5,
-    color: '#3730A3',
-    lineHeight: 19,
-    marginBottom: 4,
-  },
-  bold: {
-    fontWeight: '700',
-  },
 });
-

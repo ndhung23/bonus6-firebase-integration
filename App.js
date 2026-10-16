@@ -10,12 +10,6 @@ import {
   StatusBar,
 } from 'react-native';
 import {
-  initFirebaseServices,
-  saveCustomFirebaseConfig,
-  clearCustomFirebaseConfig,
-  getFirebaseState,
-} from './src/services/firebaseConfig';
-import {
   subscribeToUserSession,
   registerUserWithFirebase,
   loginUserWithFirebase,
@@ -35,12 +29,9 @@ import {
 import AuthScreen from './src/components/AuthScreen';
 import ProfileTab from './src/components/ProfileTab';
 import FcmTab from './src/components/FcmTab';
-import FirebaseConfigModal from './src/components/FirebaseConfigModal';
 
 export default function App() {
   const [initializing, setInitializing] = useState(true);
-  const [isLiveFirebase, setIsLiveFirebase] = useState(false);
-  const [firebaseConfig, setFirebaseConfig] = useState({});
   const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState('profile');
   const [fcmInfo, setFcmInfo] = useState({
@@ -52,8 +43,6 @@ export default function App() {
   });
   const [notifications, setNotifications] = useState([]);
   const [latestToast, setLatestToast] = useState(null);
-  const [configModalVisible, setConfigModalVisible] = useState(false);
-  const [configVersion, setConfigVersion] = useState(0);
 
   const initFcmAndHistory = useCallback(async (currentUid) => {
     const history = await loadNotificationHistory();
@@ -62,36 +51,24 @@ export default function App() {
     const tokenData = await registerForFcmNotificationsAsync();
     setFcmInfo(tokenData);
 
-    if (currentUid && tokenData.fcmToken) {
+    if (currentUid && (tokenData.fcmToken || tokenData.expoPushToken)) {
       await syncDeviceTokensToFirebase(currentUid, tokenData);
     }
   }, []);
 
-  // Khởi tạo Firebase & theo dõi phiên đăng nhập
+  // Lắng nghe phiên đăng nhập Firebase Authentication & Firestore
   useEffect(() => {
-    let unsubscribeAuth = null;
     let isMounted = true;
 
-    async function bootstrap() {
-      setInitializing(true);
-      const state = await initFirebaseServices();
+    const unsubscribeAuth = subscribeToUserSession(async (userProfile) => {
       if (!isMounted) return;
+      setUser(userProfile);
+      setInitializing(false);
 
-      setIsLiveFirebase(state.isLive);
-      setFirebaseConfig(state.config || {});
-
-      unsubscribeAuth = subscribeToUserSession(async (userProfile) => {
-        if (!isMounted) return;
-        setUser(userProfile);
-        setInitializing(false);
-
-        if (userProfile?.uid) {
-          await initFcmAndHistory(userProfile.uid);
-        }
-      });
-    }
-
-    bootstrap();
+      if (userProfile?.uid) {
+        await initFcmAndHistory(userProfile.uid);
+      }
+    });
 
     return () => {
       isMounted = false;
@@ -99,7 +76,7 @@ export default function App() {
         unsubscribeAuth();
       }
     };
-  }, [configVersion, initFcmAndHistory]);
+  }, [initFcmAndHistory]);
 
   // Đăng ký lắng nghe sự kiện nhận Push Notification (Foreground & Background Tap)
   useEffect(() => {
@@ -128,7 +105,7 @@ export default function App() {
         cleanupListeners();
       }
     };
-  }, [configVersion]);
+  }, []);
 
   // Tự ẩn Toast thông báo sau 5 giây
   useEffect(() => {
@@ -178,28 +155,12 @@ export default function App() {
     });
   };
 
-  const handleSaveFirebaseConfig = async (newConfig, useSandbox) => {
-    await saveCustomFirebaseConfig(newConfig, useSandbox);
-    const current = getFirebaseState();
-    setIsLiveFirebase(current.isLive);
-    setFirebaseConfig(current.config || {});
-    setConfigVersion((v) => v + 1);
-  };
-
-  const handleResetSandbox = async () => {
-    await clearCustomFirebaseConfig();
-    const current = getFirebaseState();
-    setIsLiveFirebase(current.isLive);
-    setFirebaseConfig(current.config || {});
-    setConfigVersion((v) => v + 1);
-  };
-
   if (initializing) {
     return (
       <SafeAreaView style={styles.loadingScreen}>
         <ActivityIndicator size="large" color="#4F46E5" />
         <Text style={styles.loadingText}>
-          Đang khởi tạo dịch vụ Firebase Authentication & FCM...
+          Đang kết nối Firebase Authentication & FCM...
         </Text>
       </SafeAreaView>
     );
@@ -228,46 +189,23 @@ export default function App() {
       )}
 
       {!user ? (
-        <AuthScreen
-          isLiveFirebase={isLiveFirebase}
-          onLogin={handleLogin}
-          onRegister={handleRegister}
-          onOpenConfig={() => setConfigModalVisible(true)}
-        />
+        <AuthScreen onLogin={handleLogin} onRegister={handleRegister} />
       ) : (
         <View style={styles.mainWrapper}>
           {/* Thanh điều hướng trên cùng */}
           <View style={styles.topBar}>
             <View style={styles.topBarLeft}>
               <Text style={styles.appTitle}>Firebase Manager</Text>
-              <View
-                style={[
-                  styles.modePill,
-                  isLiveFirebase ? styles.modePillLive : styles.modePillSandbox,
-                ]}>
-                <Text
-                  style={[
-                    styles.modePillText,
-                    { color: isLiveFirebase ? '#065F46' : '#92400E' },
-                  ]}>
-                  {isLiveFirebase ? '● Firebase Live' : '● Sandbox Mode'}
-                </Text>
+              <View style={styles.modePillLive}>
+                <Text style={styles.modePillText}>● Firebase Connected</Text>
               </View>
             </View>
 
-            <View style={styles.topBarActions}>
-              <Pressable
-                style={styles.configTopBtn}
-                onPress={() => setConfigModalVisible(true)}>
-                <Text style={styles.configTopBtnText}>⚙️ Cấu hình</Text>
-              </Pressable>
-
-              <Pressable
-                style={styles.logoutBtn}
-                onPress={logoutUserFromFirebase}>
-                <Text style={styles.logoutBtnText}>Đăng xuất</Text>
-              </Pressable>
-            </View>
+            <Pressable
+              style={styles.logoutBtn}
+              onPress={logoutUserFromFirebase}>
+              <Text style={styles.logoutBtnText}>Đăng xuất</Text>
+            </Pressable>
           </View>
 
           {/* Thanh chuyển Tab */}
@@ -332,15 +270,6 @@ export default function App() {
           </ScrollView>
         </View>
       )}
-
-      <FirebaseConfigModal
-        visible={configModalVisible}
-        currentConfig={firebaseConfig}
-        isLiveFirebase={isLiveFirebase}
-        onClose={() => setConfigModalVisible(false)}
-        onSaveConfig={handleSaveFirebaseConfig}
-        onResetToSandbox={handleResetSandbox}
-      />
     </SafeAreaView>
   );
 }
@@ -424,36 +353,16 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#111827',
   },
-  modePill: {
+  modePillLive: {
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 999,
-  },
-  modePillLive: {
     backgroundColor: '#D1FAE5',
-  },
-  modePillSandbox: {
-    backgroundColor: '#FEF3C7',
   },
   modePillText: {
     fontSize: 11,
     fontWeight: '700',
-  },
-  topBarActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  configTopBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: '#EEF2FF',
-  },
-  configTopBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#4F46E5',
+    color: '#065F46',
   },
   logoutBtn: {
     paddingHorizontal: 11,
@@ -507,4 +416,3 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
 });
-
