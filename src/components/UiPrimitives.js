@@ -303,12 +303,6 @@ const styles = StyleSheet.create({
   },
   inputWrapperFocused: {
     borderColor: COLORS.primary,
-    backgroundColor: '#FAFBFF',
-    shadowColor: COLORS.primary,
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
   },
   inputField: {
     flex: 1,

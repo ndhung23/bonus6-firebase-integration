@@ -289,7 +289,7 @@ export default function App() {
           <ScrollView
             style={styles.scrollArea}
             contentContainerStyle={styles.scrollContent}
-            keyboardShouldPersistTaps="handled"
+            keyboardShouldPersistTaps="always"
             showsVerticalScrollIndicator={false}>
             <View style={styles.centeredContent}>
               {activeTab === 'profile' ? (

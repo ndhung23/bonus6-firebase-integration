@@ -56,10 +56,11 @@ export default function AuthScreen({ onLogin, onRegister }) {
   return (
     <KeyboardAvoidingView
       style={styles.wrapper}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      enabled={Platform.OS === 'ios'}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
+        keyboardShouldPersistTaps="always"
         showsVerticalScrollIndicator={false}>
         <View style={styles.authContainer}>
           {/* Hero Dark Banner */}
@@ -221,9 +222,9 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: 'center',
     paddingHorizontal: 18,
-    paddingVertical: 28,
+    paddingTop: 36,
+    paddingBottom: 60,
   },
   authContainer: {
     maxWidth: 500,
