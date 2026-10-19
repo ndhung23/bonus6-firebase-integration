@@ -51,16 +51,13 @@ export function ModernInput({
   autoCapitalize = 'sentences',
   helperText,
 }) {
-  const [focused, setFocused] = useState(false);
   const [hidden, setHidden] = useState(secureTextEntry);
 
   return (
     <View style={styles.inputContainer}>
       {label ? (
         <View style={styles.labelRow}>
-          <Text style={[styles.label, focused && styles.labelFocused]}>
-            {label}
-          </Text>
+          <Text style={styles.label}>{label}</Text>
           {badgeText ? (
             <View style={styles.labelBadge}>
               <Text style={styles.labelBadgeText}>{badgeText}</Text>
@@ -73,7 +70,6 @@ export function ModernInput({
         style={[
           styles.inputWrapper,
           multiline && styles.inputWrapperMultiline,
-          focused && styles.inputWrapperFocused,
         ]}>
         <TextInput
           style={[
@@ -89,8 +85,7 @@ export function ModernInput({
           multiline={multiline}
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
+          underlineColorAndroid="transparent"
         />
 
         {secureTextEntry ? (

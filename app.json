@@ -28,6 +28,7 @@
       },
       "package": "com.se1990nj.firebaseapp",
       "versionCode": 1,
+      "softwareKeyboardLayoutMode": "pan",
       "permissions": [
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE",

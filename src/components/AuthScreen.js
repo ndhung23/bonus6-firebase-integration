@@ -53,15 +53,12 @@ export default function AuthScreen({ onLogin, onRegister }) {
     }
   };
 
-  return (
-    <KeyboardAvoidingView
-      style={styles.wrapper}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      enabled={Platform.OS === 'ios'}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="always"
-        showsVerticalScrollIndicator={false}>
+  const content = (
+    <ScrollView
+      contentContainerStyle={styles.scrollContent}
+      keyboardShouldPersistTaps="always"
+      keyboardDismissMode="none"
+      showsVerticalScrollIndicator={false}>
         <View style={styles.authContainer}>
           {/* Hero Dark Banner */}
           <View style={styles.heroBanner}>
@@ -211,8 +208,17 @@ export default function AuthScreen({ onLogin, onRegister }) {
           </View>
         </View>
       </ScrollView>
-    </KeyboardAvoidingView>
   );
+
+  if (Platform.OS === 'ios') {
+    return (
+      <KeyboardAvoidingView style={styles.wrapper} behavior="padding">
+        {content}
+      </KeyboardAvoidingView>
+    );
+  }
+
+  return <View style={styles.wrapper}>{content}</View>;
 }
 
 const styles = StyleSheet.create({
