@@ -338,8 +338,10 @@ export default function FcmTab({
           </View>
         ) : (
           <View style={styles.timelineList}>
-            {notifications.map((item) => (
-              <View key={item.id} style={styles.timelineCard}>
+            {notifications.map((item, index) => (
+              <View
+                key={item.id ? `${item.id}-${index}` : `notif-${index}`}
+                style={styles.timelineCard}>
                 <View style={styles.timelineAccent} />
                 <View style={styles.timelineContent}>
                   <View style={styles.timelineTopRow}>

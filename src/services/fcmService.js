@@ -11,7 +11,6 @@ if (Platform.OS !== 'web') {
   try {
     Notifications.setNotificationHandler({
       handleNotification: async () => ({
-        shouldShowAlert: true,
         shouldPlaySound: true,
         shouldSetBadge: true,
         shouldShowBanner: true,
@@ -187,7 +186,39 @@ export const registerForFcmNotificationsAsync = async () => {
 export const loadNotificationHistory = async () => {
   try {
     const raw = await AsyncStorage.getItem(NOTIFICATION_HISTORY_KEY);
-    return raw ? JSON.parse(raw) : [];
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+
+    // Tự động khử trùng các bản tin trùng key/id nếu AsyncStorage trước đó bị trùng
+    const seenIds = new Set();
+    const sanitized = [];
+    let hasModified = false;
+
+    for (let i = 0; i < parsed.length; i++) {
+      const item = parsed[i];
+      if (!item) continue;
+      let uniqueId = item.id;
+      if (!uniqueId || seenIds.has(uniqueId)) {
+        hasModified = true;
+        uniqueId = `notif-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 7)}`;
+      }
+      seenIds.add(uniqueId);
+      sanitized.push({
+        ...item,
+        id: uniqueId,
+        notificationId: item.notificationId || item.id || uniqueId,
+      });
+    }
+
+    if (hasModified) {
+      await AsyncStorage.setItem(
+        NOTIFICATION_HISTORY_KEY,
+        JSON.stringify(sanitized)
+      ).catch(() => {});
+    }
+
+    return sanitized;
   } catch (_) {
     return [];
   }
@@ -196,9 +227,52 @@ export const loadNotificationHistory = async () => {
 export const appendNotificationHistory = async (item) => {
   try {
     const existing = await loadNotificationHistory();
-    const updated = [item, ...existing].slice(0, 30);
-    await AsyncStorage.setItem(NOTIFICATION_HISTORY_KEY, JSON.stringify(updated));
-    return updated;
+    const targetNotifId = item.notificationId || item.id;
+
+    // Kiểm tra xem thông báo này đã được lưu trước đó chưa (tránh trùng lặp khi vừa nhận vừa bấm)
+    const existingIndex = targetNotifId
+      ? existing.findIndex(
+          (e) => (e.notificationId && e.notificationId === targetNotifId) || e.id === item.id
+        )
+      : -1;
+
+    let updated;
+    if (existingIndex >= 0) {
+      // Cập nhật trạng thái của bản tin hiện có (ví dụ: chuyển sang Tapped) thay vì sinh ra 2 dòng giống nhau
+      updated = [...existing];
+      updated[existingIndex] = {
+        ...updated[existingIndex],
+        ...item,
+        id: updated[existingIndex].id, // Giữ nguyên key duy nhất ổn định
+        notificationId: targetNotifId,
+      };
+    } else {
+      updated = [item, ...existing];
+    }
+
+    // Đảm bảo tuyệt đối 100% key id là duy nhất cho mỗi phần tử
+    const seenIds = new Set();
+    const sanitized = [];
+    for (let i = 0; i < updated.length; i++) {
+      const entry = updated[i];
+      let uniqueKey = entry.id;
+      if (!uniqueKey || seenIds.has(uniqueKey)) {
+        uniqueKey = `notif-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 7)}`;
+      }
+      seenIds.add(uniqueKey);
+      sanitized.push({
+        ...entry,
+        id: uniqueKey,
+        notificationId: entry.notificationId || targetNotifId || uniqueKey,
+      });
+    }
+
+    const finalHistory = sanitized.slice(0, 30);
+    await AsyncStorage.setItem(
+      NOTIFICATION_HISTORY_KEY,
+      JSON.stringify(finalHistory)
+    );
+    return finalHistory;
   } catch (_) {
     return [item];
   }
@@ -218,13 +292,24 @@ export const setupFcmNotificationListeners = ({
   let receivedSub = null;
   let responseSub = null;
   let webUnsubscribe = null;
+  let lastProcessedTapId = null;
 
   const normalizeNotification = (rawNotif, sourceType) => {
     const content = rawNotif?.request?.content || rawNotif || {};
+    const notifId =
+      rawNotif?.request?.identifier ||
+      rawNotif?.identifier ||
+      '';
+    // Mỗi mục trong danh sách timeline có một entry id duy nhất độc lập
+    const recordId =
+      'notif-' +
+      Date.now() +
+      '-' +
+      Math.random().toString(36).slice(2, 9);
+
     return {
-      id:
-        rawNotif?.request?.identifier ||
-        'notif-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+      id: recordId,
+      notificationId: notifId || recordId,
       title: content.title || 'Thông báo FCM',
       body: content.body || '',
       data: content.data || {},
@@ -243,6 +328,14 @@ export const setupFcmNotificationListeners = ({
 
     responseSub = Notifications.addNotificationResponseReceivedListener(
       (response) => {
+        const rawId = response?.notification?.request?.identifier;
+        if (rawId && lastProcessedTapId === rawId) {
+          // Bỏ qua nếu tap event này vừa được xử lý bởi getLastNotificationResponseAsync
+          return;
+        }
+        if (rawId) {
+          lastProcessedTapId = rawId;
+        }
         const formatted = normalizeNotification(
           response?.notification,
           'Tapped Notification'
@@ -255,6 +348,10 @@ export const setupFcmNotificationListeners = ({
       Notifications.getLastNotificationResponseAsync()
         .then((lastResponse) => {
           if (lastResponse?.notification) {
+            const rawId = lastResponse?.notification?.request?.identifier;
+            if (rawId) {
+              lastProcessedTapId = rawId;
+            }
             const formatted = normalizeNotification(
               lastResponse.notification,
               'Opened from Background'
