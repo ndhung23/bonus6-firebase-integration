@@ -9,7 +9,7 @@
 
 | Nội dung | Đường dẫn (URL) | Ghi chú |
 | :--- | :--- | :--- |
-| 📱 **Link Tải File Cài Đặt Android (APK)** | [Tải trực tiếp file APK (58.3 MB)](https://expo.dev/artifacts/eas/Et2BtcYGj18cPhfMaSK5wESvgViSfbANtPuSqr7kwcI.apk) | Cài đặt và chạy native 100% trên điện thoại Android để test FCM Notification |
+| 📱 **Link Tải File Cài Đặt Android (APK)** | [Tải trực tiếp file APK (71 MB - Bản mới nhất)](https://expo.dev/artifacts/eas/3vudaKsSEAQv_ndA5Qay5Em_BofW00kP45iyYQcBysg.apk) | Cài đặt và chạy native 100% trên điện thoại Android để test FCM Notification |
 | 🚀 **Link Ứng Dụng Web Chạy Trực Tiếp** | [https://bonus6-firebase-integration.expo.app](https://bonus6-firebase-integration.expo.app) | Bản React Native Web deploy qua EAS Hosting, mở trực tiếp trên trình duyệt |
 | 💻 **Link Mã Nguồn (GitHub Repository)** | [https://github.com/ndhung23/bonus6-firebase-integration](https://github.com/ndhung23/bonus6-firebase-integration) | Source code công khai, quản lý commit và tài liệu hướng dẫn |
 | ⚙️ **Link Theo Dõi EAS Build (Expo Cloud)** | [Trang Build EAS Android](https://expo.dev/accounts/ndhung23/projects/bonus6-firebase-integration/builds/cc0154e3-2ff7-4330-aedf-70833ef1a4f8) | Tiến trình build tự động artifact APK bản mới nhất trên cloud |
