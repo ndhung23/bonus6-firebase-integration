@@ -7,6 +7,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Linking,
 } from 'react-native';
 import {
   COLORS,
@@ -14,6 +15,45 @@ import {
   PrimaryButton,
   FeedbackAlert,
 } from './UiPrimitives';
+
+const SUBMISSION_LINKS = [
+  {
+    id: 'apk',
+    icon: '📱',
+    label: 'Tải File Cài Đặt Android (APK)',
+    sub: '58.3 MB • Cài trực tiếp trên điện thoại để test Native FCM',
+    url: 'https://expo.dev/artifacts/eas/Et2BtcYGj18cPhfMaSK5wESvgViSfbANtPuSqr7kwcI.apk',
+    badge: 'APK Native',
+    badgeColor: '#10B981',
+  },
+  {
+    id: 'web',
+    icon: '🚀',
+    label: 'Ứng Dụng Chạy Trực Tiếp (Web)',
+    sub: 'bonus6-firebase-integration.expo.app (EAS Hosting)',
+    url: 'https://bonus6-firebase-integration.expo.app',
+    badge: 'Web Live',
+    badgeColor: '#6366F1',
+  },
+  {
+    id: 'github',
+    icon: '💻',
+    label: 'Mã Nguồn Dự Án (GitHub Repo)',
+    sub: 'github.com/ndhung23/bonus6-firebase-integration',
+    url: 'https://github.com/ndhung23/bonus6-firebase-integration',
+    badge: 'Public Code',
+    badgeColor: '#0F172A',
+  },
+  {
+    id: 'expo',
+    icon: '📊',
+    label: 'Trang Quản Lý Dự Án Expo',
+    sub: 'expo.dev/accounts/ndhung23/projects/bonus6-firebase-integration',
+    url: 'https://expo.dev/accounts/ndhung23/projects/bonus6-firebase-integration',
+    badge: 'Expo EAS',
+    badgeColor: '#F59E0B',
+  },
+];
 
 export default function AuthScreen({ onLogin, onRegister }) {
   const [isRegisterMode, setIsRegisterMode] = useState(false);
@@ -205,6 +245,52 @@ export default function AuthScreen({ onLogin, onRegister }) {
               loading={loading}
               style={styles.submitBtn}
             />
+
+            {/* Quick Submission Links for Grader/Tester */}
+            <View style={styles.linksCard}>
+              <View style={styles.linksHeader}>
+                <View style={styles.linksDot} />
+                <Text style={styles.linksTag}>MMA301 • LIÊN KẾT NỘP BÀI ONLINE</Text>
+              </View>
+              <Text style={styles.linksTitle}>Đường dẫn kiểm thử & Chấm điểm</Text>
+              <Text style={styles.linksSubtitle}>
+                Chạm vào liên kết bên dưới để mở hoặc tải về trực tiếp:
+              </Text>
+
+              <View style={styles.linksList}>
+                {SUBMISSION_LINKS.map((item) => (
+                  <Pressable
+                    key={item.id}
+                    style={({ pressed }) => [
+                      styles.linkItem,
+                      pressed && styles.linkItemPressed,
+                    ]}
+                    onPress={() => Linking.openURL(item.url).catch(() => {})}>
+                    <View style={styles.linkIconCircle}>
+                      <Text style={styles.linkIconText}>{item.icon}</Text>
+                    </View>
+                    <View style={styles.linkContent}>
+                      <View style={styles.linkTopRow}>
+                        <Text style={styles.linkItemLabel} numberOfLines={1}>
+                          {item.label}
+                        </Text>
+                        <View
+                          style={[
+                            styles.linkBadge,
+                            { backgroundColor: item.badgeColor },
+                          ]}>
+                          <Text style={styles.linkBadgeText}>{item.badge}</Text>
+                        </View>
+                      </View>
+                      <Text style={styles.linkItemSub} numberOfLines={1}>
+                        {item.sub}
+                      </Text>
+                    </View>
+                    <Text style={styles.linkArrow}>↗</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
           </View>
         </View>
       </ScrollView>
@@ -387,5 +473,108 @@ const styles = StyleSheet.create({
   },
   submitBtn: {
     marginTop: 6,
+  },
+  linksCard: {
+    marginTop: 24,
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  linksHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  linksDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: COLORS.primary,
+    marginRight: 7,
+  },
+  linksTag: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: COLORS.primary,
+    letterSpacing: 0.8,
+  },
+  linksTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: COLORS.textMain,
+    marginBottom: 3,
+  },
+  linksSubtitle: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+    marginBottom: 14,
+  },
+  linksList: {
+    gap: 10,
+  },
+  linkItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.surfaceMuted,
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    gap: 12,
+  },
+  linkItemPressed: {
+    backgroundColor: '#EEF2FF',
+    borderColor: '#C7D2FE',
+    transform: [{ scale: 0.99 }],
+  },
+  linkIconCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: COLORS.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  linkIconText: {
+    fontSize: 18,
+  },
+  linkContent: {
+    flex: 1,
+  },
+  linkTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 6,
+  },
+  linkItemLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.textMain,
+    flex: 1,
+  },
+  linkBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  linkBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 9.5,
+    fontWeight: '800',
+    letterSpacing: 0.3,
+  },
+  linkItemSub: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  linkArrow: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: COLORS.textMuted,
+    marginLeft: 2,
   },
 });
